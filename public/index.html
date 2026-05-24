@@ -479,9 +479,19 @@ function addHistory(u,a){ const s=document.getElementById('histSec'),l=document.
 function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
 
+// ── Periodic status poll (keeps ESP32 indicator in sync) ────────
+async function pollStatus(){
+  try{
+    const r = await fetch(`/api/status/${roomId}`, { signal: AbortSignal.timeout(4000) });
+    if(r.ok){ const d = await r.json(); applyState(d); }
+  }catch(_){}
+}
+setInterval(pollStatus, 5000);
+
 // ── Boot ─────────────────────────────────────────────────────────
 connectWS();
 initRecog();
+pollStatus();
 </script>
 </body>
 </html>
