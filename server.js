@@ -32,7 +32,7 @@ const server = http.createServer(app);
 const wss    = new WebSocketServer({ server, path: '/ws' });
 const genAI  = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const MODEL  = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+const MODEL  = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
 app.use(express.json({ limit: '10kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
