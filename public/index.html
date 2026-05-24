@@ -414,25 +414,30 @@ async function textCmd(text){
 // ── Speech recognition ──────────────────────────────────────────
 let recog = null, isRec = false;
 const micBtn = document.getElementById('micBtn');
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 function initRecog(){
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR){ showErr('Speech not supported. Use Chrome or Edge.'); return false; }
-  recog = new SR();
-  recog.continuous = false; recog.interimResults = true; recog.maxAlternatives = 1;
-
-  recog.onstart  = ()=>{ isRec=true; micState('rec'); document.getElementById('tTxt').textContent='Listening…'; document.getElementById('tTxt').className='t-txt interim'; document.getElementById('aiBox').classList.remove('show'); };
-  recog.onresult = e=>{ let f='',i=''; for(let j=e.resultIndex;j<e.results.length;j++){ if(e.results[j].isFinal) f+=e.results[j][0].transcript; else i+=e.results[j][0].transcript; } if(f){ document.getElementById('tTxt').textContent=f; document.getElementById('tTxt').className='t-txt'; stopWave(); callAI(f).then(r=>processResult(r,f)); } else if(i){ document.getElementById('tTxt').textContent=i; } };
-  recog.onerror  = ev=>{ isRec=false; micState('idle'); stopWave(); if(ev.error==='not-allowed') showErr('Microphone denied. Allow mic in browser settings.'); else if(ev.error==='no-speech') document.getElementById('tTxt').textContent='No speech detected.'; else showErr('Speech error: '+ev.error); };
-  recog.onend    = ()=>{ isRec=false; stopWave(); if(micBtn.className.includes('rec')) micState('idle'); };
   return true;
+}
+
+function buildRecog(lang){
+  const r = new SR();
+  r.continuous = false; r.interimResults = true; r.maxAlternatives = 1;
+  r.lang = lang === 'auto' ? 'en-IN' : lang;
+
+  r.onstart  = ()=>{ isRec=true; micState('rec'); document.getElementById('tTxt').textContent='Listening…'; document.getElementById('tTxt').className='t-txt interim'; document.getElementById('aiBox').classList.remove('show'); };
+  r.onresult = e=>{ let f='',i=''; for(let j=e.resultIndex;j<e.results.length;j++){ if(e.results[j].isFinal) f+=e.results[j][0].transcript; else i+=e.results[j][0].transcript; } if(f){ document.getElementById('tTxt').textContent=f; document.getElementById('tTxt').className='t-txt'; stopWave(); callAI(f).then(rv=>processResult(rv,f)); } else if(i){ document.getElementById('tTxt').textContent=i; } };
+  r.onerror  = ev=>{ isRec=false; micState('idle'); stopWave(); if(ev.error==='not-allowed') showErr('Microphone denied. Allow mic in browser settings.'); else if(ev.error==='no-speech') document.getElementById('tTxt').textContent='No speech detected. Try again.'; else if(ev.error==='aborted'){} else showErr('Speech error: '+ev.error); };
+  r.onend    = ()=>{ isRec=false; stopWave(); if(micBtn.className.includes('rec')) micState('idle'); };
+  return r;
 }
 
 async function toggleMic(){
   if(isRec){ recog?.stop(); return; }
-  if(!recog && !initRecog()) return;
+  if(!SR){ showErr('Speech not supported. Use Chrome or Edge.'); return; }
   const lang = document.getElementById('langSel').value;
-  recog.lang = lang === 'auto' ? 'en-IN' : lang;
+  recog = buildRecog(lang);
   await startWave();
   try{ recog.start(); }catch(_){ stopWave(); }
 }
