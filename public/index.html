@@ -343,23 +343,26 @@ async function sendCmd(cmd){
 }
 
 // ── AI voice processing ─────────────────────────────────────────
-let aiHistory = [];  // {role:'user'|'model', text:'...'}
+let aiPending = false;
 
 async function callAI(text){
+  if(aiPending) return null;
+  aiPending = true;
   micState('proc');
   showAI('<div class="dots"><span></span><span></span><span></span></div>');
 
-  // Build history for context
-  const histPayload = aiHistory.slice(-12).map(h=>({ role:h.role, text:h.text }));
-  aiHistory.push({ role:'user', text });
+  // Manual timeout — AbortSignal.timeout not available on all Android browsers
+  const ctrl = new AbortController();
+  const tId  = setTimeout(()=> ctrl.abort(), 12000);
 
   try{
     const res = await fetch('/api/voice',{
-      method:'POST',
+      method :'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ text, roomId, history: histPayload }),
-      signal: AbortSignal.timeout(15000)
+      body   : JSON.stringify({ text, roomId }),
+      signal : ctrl.signal
     });
+    clearTimeout(tId);
 
     if(!res.ok){
       const e = await res.json().catch(()=>({}));
@@ -367,14 +370,15 @@ async function callAI(text){
     }
 
     const data = await res.json();
-    aiHistory.push({ role:'model', text: JSON.stringify(data.command) });
     return data.command;
 
   }catch(e){
-    if(e.name==='TimeoutError') showErr('AI request timed out.');
+    clearTimeout(tId);
+    if(e.name==='AbortError') showErr('Request timed out — try again.');
     else showErr(`Error: ${e.message}`);
     return null;
   }finally{
+    aiPending = false;
     micState('idle');
   }
 }
