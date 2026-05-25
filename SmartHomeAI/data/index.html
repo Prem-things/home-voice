@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>SmartHome AI</title>
+<style>
+/* ═══════════════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════════════ */
+:root{
+  --bg:        #0a0a0f;
+  --bg2:       #10101a;
+  --card:      rgba(255,255,255,0.035);
+  --border:    rgba(255,255,255,0.07);
+  --cyan:      #00f5ff;
+  --purple:    #b44fff;
+  --green:     #00ff9f;
+  --orange:    #ff8c38;
+  --pink:      #ff2d78;
+  --amber:     #ffbe38;
+  --txt:       #dde0ff;
+  --txt2:      #6870a0;
+  --r:         1rem;
+}
+
+/* ═══════════════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════════════ */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--txt);
+  font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+  min-height:100svh;
+  overflow-x:hidden;
+}
+
+/* animated ambient blobs */
+body::before,body::after{
+  content:'';
+  position:fixed;
+  border-radius:50%;
+  pointer-events:none;
+  filter:blur(120px);
+  z-index:0;
+  opacity:.5;
+  animation:blobDrift 18s ease-in-out infinite alternate;
+}
+body::before{
+  width:50vw;height:50vw;
+  top:-15vw;left:-15vw;
+  background:radial-gradient(circle,rgba(0,245,255,.06),transparent 70%);
+}
+body::after{
+  width:60vw;height:60vw;
+  bottom:-20vw;right:-15vw;
+  background:radial-gradient(circle,rgba(180,79,255,.06),transparent 70%);
+  animation-delay:-9s;
+}
+@keyframes blobDrift{
+  from{transform:translate(0,0) scale(1)}
+  to{transform:translate(4vw,4vh) scale(1.1)}
+}
+
+/* ═══════════════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════════════ */
+.page{
+  max-width:480px;
+  margin:0 auto;
+  padding:0 16px 48px;
+  position:relative;
+  z-index:1;
+}
+
+/* ─── HEADER ────────────────────────────────────── */
+.header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:18px 0 16px;
+}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{
+  width:38px;height:38px;
+  background:linear-gradient(135deg,var(--cyan),var(--purple));
+  border-radius:11px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:19px;
+  box-shadow:0 0 24px rgba(0,245,255,.3);
+}
+.logo-name{
+  font-size:19px;font-weight:700;
+  background:linear-gradient(90deg,var(--cyan),var(--purple));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.logo-sub{font-size:10px;color:var(--txt2);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
+.hdr-btns{display:flex;gap:8px}
+.icon-btn{
+  background:var(--card);
+  border:1px solid var(--border);
+  color:var(--txt2);
+  width:38px;height:38px;
+  border-radius:10px;
+  cursor:pointer;
+  font-size:17px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .25s;
+}
+.icon-btn:hover{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 14px rgba(0,245,255,.2)}
+
+/* ─── CONNECTION BAR ────────────────────────────── */
+.conn-bar{
+  display:flex;align-items:center;gap:10px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px 14px;
+  margin-bottom:14px;
+  font-size:12.5px;
+  color:var(--txt2);
+}
+.dot{
+  width:8px;height:8px;border-radius:50%;flex-shrink:0;
+  background:var(--green);box-shadow:0 0 8px var(--green);
+}
+.dot.off{background:var(--pink);box-shadow:0 0 8px var(--pink)}
+.dot.busy{background:var(--amber);box-shadow:0 0 8px var(--amber);animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ─── ERROR BANNER ──────────────────────────────── */
+.err-banner{
+  background:rgba(255,45,120,.1);
+  border:1px solid rgba(255,45,120,.3);
+  border-radius:10px;
+  padding:10px 14px;
+  font-size:13px;
+  color:var(--pink);
+  margin-bottom:14px;
+  display:none;
+}
+.err-banner.show{display:block;animation:slideIn .25s ease}
+
+/* ─── LANGUAGE SELECT ───────────────────────────── */
+.lang-wrap{position:relative;margin-bottom:16px}
+.lang-select{
+  width:100%;
+  background:var(--card);
+  border:1px solid var(--border);
+  color:var(--txt);
+  padding:12px 40px 12px 14px;
+  border-radius:12px;
+  font-size:14px;
+  cursor:pointer;
+  appearance:none;
+  outline:none;
+  transition:border-color .25s;
+}
+.lang-select:focus{border-color:var(--cyan);box-shadow:0 0 16px rgba(0,245,255,.12)}
+.lang-select option{background:#14142a;color:var(--txt)}
+.lang-arrow{
+  position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  pointer-events:none;color:var(--cyan);font-size:12px;
+}
+
+/* ─── DEVICES GRID ──────────────────────────────── */
+.dev-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+  margin-bottom:16px;
+}
+.dev-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:18px 10px 14px;
+  text-align:center;
+  cursor:pointer;
+  transition:all .28s ease;
+  position:relative;
+  overflow:hidden;
+  user-select:none;
+}
+.dev-card::after{
+  content:'';
+  position:absolute;inset:0;
+  background:linear-gradient(135deg,transparent,rgba(255,255,255,.02));
+  pointer-events:none;
+}
+.dev-card:active{transform:scale(.96)}
+.dev-card.on{
+  border-color:var(--cyan);
+  background:rgba(0,245,255,.05);
+  box-shadow:0 0 28px rgba(0,245,255,.15),inset 0 0 20px rgba(0,245,255,.04);
+}
+.dev-icon{font-size:30px;display:block;margin-bottom:8px;transition:filter .3s}
+.dev-card.on .dev-icon{filter:drop-shadow(0 0 8px var(--cyan))}
+.dev-name{font-size:11px;color:var(--txt2);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px;font-weight:600}
+.dev-badge{
+  font-size:10px;font-weight:700;
+  padding:3px 10px;border-radius:20px;
+  display:inline-block;letter-spacing:.6px;
+  transition:all .25s;
+}
+.dev-badge.on{background:rgba(0,255,159,.14);color:var(--green);border:1px solid rgba(0,255,159,.28)}
+.dev-badge.off{background:rgba(255,255,255,.05);color:var(--txt2);border:1px solid rgba(255,255,255,.07)}
+
+/* ─── VOICE PANEL ───────────────────────────────── */
+.voice-panel{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:22px;
+  padding:24px 20px 20px;
+  margin-bottom:16px;
+  text-align:center;
+}
+
+/* waveform */
+#wave{
+  width:100%;height:56px;
+  border-radius:8px;
+  margin-bottom:20px;
+  opacity:0;
+  transition:opacity .3s;
+  display:block;
+}
+#wave.show{opacity:1}
+
+/* mic button */
+.mic-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px}
+.mic-rings{position:absolute;inset:0;pointer-events:none}
+.ring{
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  border:1.5px solid var(--cyan);
+  border-radius:50%;
+  opacity:0;
+}
+.ring:nth-child(1){width:96px;height:96px}
+.ring:nth-child(2){width:124px;height:124px}
+.ring:nth-child(3){width:154px;height:154px}
+.recording .ring{animation:ripple 1.8s ease-out infinite}
+.recording .ring:nth-child(2){animation-delay:.6s}
+.recording .ring:nth-child(3){animation-delay:1.2s}
+@keyframes ripple{
+  0%{transform:translate(-50%,-50%) scale(.7);opacity:.7}
+  100%{transform:translate(-50%,-50%) scale(1);opacity:0}
+}
+
+.mic-btn{
+  position:relative;z-index:1;
+  width:82px;height:82px;border-radius:50%;
+  border:2px solid var(--cyan);
+  background:linear-gradient(135deg,rgba(0,245,255,.1),rgba(180,79,255,.1));
+  color:var(--cyan);
+  font-size:30px;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .3s;
+  box-shadow:0 0 32px rgba(0,245,255,.18);
+}
+.mic-btn:hover{transform:scale(1.06);box-shadow:0 0 44px rgba(0,245,255,.3)}
+.mic-btn.rec{
+  border-color:var(--pink);color:var(--pink);
+  background:linear-gradient(135deg,rgba(255,45,120,.15),rgba(255,107,53,.12));
+  box-shadow:0 0 44px rgba(255,45,120,.25);
+  animation:micPulse 1.6s ease-in-out infinite;
+}
+@keyframes micPulse{0%,100%{box-shadow:0 0 44px rgba(255,45,120,.25)}50%{box-shadow:0 0 70px rgba(255,45,120,.5)}}
+.mic-btn.proc{
+  border-color:var(--amber);color:var(--amber);
+  background:linear-gradient(135deg,rgba(255,190,56,.12),rgba(255,140,56,.1));
+  box-shadow:0 0 30px rgba(255,190,56,.2);
+}
+.proc-spin{animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.mic-label{font-size:12px;color:var(--txt2);margin-top:4px}
+
+/* transcript */
+.transcript{
+  background:rgba(0,0,0,.25);
+  border:1px solid rgba(0,245,255,.1);
+  border-radius:12px;
+  padding:12px 14px;
+  margin-top:14px;
+  text-align:left;
+}
+.t-label{font-size:10px;color:var(--cyan);letter-spacing:1.6px;text-transform:uppercase;font-weight:700;margin-bottom:5px}
+.t-text{font-size:15px;line-height:1.55;min-height:22px;color:var(--txt);transition:color .2s}
+.t-text.interim{color:var(--txt2);font-style:italic}
+
+/* AI response box */
+.ai-box{
+  background:rgba(180,79,255,.07);
+  border:1px solid rgba(180,79,255,.2);
+  border-radius:12px;
+  padding:12px 14px;
+  margin-top:12px;
+  text-align:left;
+  display:none;
+}
+.ai-box.show{display:block;animation:slideIn .25s ease}
+.ai-label{font-size:10px;color:var(--purple);letter-spacing:1.6px;text-transform:uppercase;font-weight:700;margin-bottom:5px}
+.ai-text{font-size:14px;line-height:1.6;color:var(--txt)}
+
+/* thinking dots */
+.dots{display:inline-flex;gap:5px;align-items:center}
+.dots span{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--purple);
+  animation:bounce 1.3s ease-in-out infinite;
+}
+.dots span:nth-child(2){animation-delay:.22s}
+.dots span:nth-child(3){animation-delay:.44s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-9px);opacity:1}}
+
+/* ─── SCENES ────────────────────────────────────── */
+.section-lbl{font-size:10.5px;color:var(--txt2);letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:10px}
+.scene-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.scene-btn{
+  background:var(--card);
+  border:1px solid var(--border);
+  color:var(--txt2);
+  padding:13px 6px;
+  border-radius:14px;
+  cursor:pointer;
+  font-size:13px;
+  font-weight:500;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  transition:all .25s;
+  user-select:none;
+}
+.scene-icon{font-size:22px}
+.scene-btn[data-s=sleep]:hover{border-color:var(--purple);color:var(--purple);background:rgba(180,79,255,.07);box-shadow:0 0 16px rgba(180,79,255,.15)}
+.scene-btn[data-s=movie]:hover{border-color:var(--orange);color:var(--orange);background:rgba(255,140,56,.07);box-shadow:0 0 16px rgba(255,140,56,.15)}
+.scene-btn[data-s=reading]:hover{border-color:var(--green);color:var(--green);background:rgba(0,255,159,.06);box-shadow:0 0 16px rgba(0,255,159,.12)}
+.scene-btn:active{transform:scale(.95)}
+
+/* ─── ALL OFF BUTTON ────────────────────────────── */
+.all-off{
+  width:100%;
+  background:rgba(255,45,120,.07);
+  border:1px solid rgba(255,45,120,.22);
+  color:var(--pink);
+  padding:14px;
+  border-radius:14px;
+  font-size:14px;font-weight:600;
+  cursor:pointer;
+  transition:all .25s;
+  letter-spacing:.4px;
+  margin-bottom:16px;
+}
+.all-off:hover{background:rgba(255,45,120,.14);box-shadow:0 0 20px rgba(255,45,120,.2)}
+
+/* ─── SUGGESTIONS ───────────────────────────────── */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.chip{
+  background:var(--card);
+  border:1px solid var(--border);
+  color:var(--txt2);
+  padding:6px 12px;border-radius:20px;
+  font-size:12px;cursor:pointer;
+  transition:all .2s;
+}
+.chip:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(0,245,255,.05)}
+
+/* ─── HISTORY ────────────────────────────────────── */
+.history{margin-bottom:20px;display:none}
+.h-list{max-height:220px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.h-item{padding:10px 12px;border-radius:10px;margin-bottom:7px;font-size:12.5px;line-height:1.5}
+.h-item.u{background:rgba(0,245,255,.04);border:1px solid rgba(0,245,255,.09)}
+.h-item.a{background:rgba(180,79,255,.04);border:1px solid rgba(180,79,255,.09);color:var(--txt2)}
+.h-sender{font-size:9.5px;letter-spacing:1.3px;text-transform:uppercase;font-weight:700;margin-bottom:4px}
+.h-item.u .h-sender{color:var(--cyan)}
+.h-item.a .h-sender{color:var(--purple)}
+
+/* ─── FOOTER ────────────────────────────────────── */
+.footer{text-align:center;font-size:11px;color:var(--txt2);padding:8px 0 0;line-height:1.8}
+.hl{color:var(--cyan)}
+
+/* ─── SETTINGS DRAWER ───────────────────────────── */
+.overlay{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.55);
+  z-index:900;
+  display:none;
+  backdrop-filter:blur(4px);
+}
+.overlay.show{display:block}
+.drawer{
+  position:fixed;top:0;right:-110%;
+  width:min(380px,100vw);
+  height:100%;
+  background:var(--bg2);
+  border-left:1px solid var(--border);
+  padding:24px 20px;
+  z-index:901;
+  transition:right .32s cubic-bezier(.4,0,.2,1);
+  overflow-y:auto;
+}
+.drawer.show{right:0;box-shadow:-24px 0 60px rgba(0,0,0,.6)}
+.drawer-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.drawer-title{font-size:17px;font-weight:600}
+.close-btn{
+  background:none;border:none;color:var(--txt2);
+  font-size:22px;cursor:pointer;padding:4px;
+  display:flex;align-items:center;justify-content:center;
+}
+.form-grp{margin-bottom:18px}
+.f-lbl{display:block;font-size:11px;color:var(--txt2);letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:7px}
+.f-in{
+  width:100%;
+  background:var(--card);
+  border:1px solid var(--border);
+  color:var(--txt);
+  padding:12px 13px;
+  border-radius:10px;
+  font-size:14px;
+  outline:none;
+  transition:border-color .25s;
+}
+.f-in:focus{border-color:var(--cyan)}
+.f-in::placeholder{color:var(--txt2)}
+.f-in[type=password]{font-family:monospace;letter-spacing:2px}
+.f-hint{font-size:11px;color:var(--txt2);margin-top:5px;line-height:1.5}
+.save-btn{
+  width:100%;
+  background:linear-gradient(135deg,rgba(0,245,255,.12),rgba(180,79,255,.12));
+  border:1px solid var(--cyan);
+  color:var(--cyan);
+  padding:14px;border-radius:12px;
+  font-size:15px;font-weight:600;
+  cursor:pointer;transition:all .25s;
+  letter-spacing:.4px;
+  margin-top:4px;
+}
+.save-btn:hover{background:linear-gradient(135deg,rgba(0,245,255,.22),rgba(180,79,255,.22));box-shadow:0 0 22px rgba(0,245,255,.25)}
+.divider{border:none;border-top:1px solid var(--border);margin:22px 0}
+.dev-info{font-size:12px;color:var(--txt2);line-height:2.2}
+.dev-info span{color:var(--cyan)}
+
+/* ─── TOAST ─────────────────────────────────────── */
+.toast{
+  position:fixed;bottom:24px;left:50%;
+  transform:translateX(-50%) translateY(80px);
+  background:rgba(20,20,40,.96);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:12px 20px;
+  font-size:13.5px;
+  color:var(--txt);
+  z-index:999;
+  transition:transform .3s ease;
+  max-width:320px;
+  width:calc(100% - 40px);
+  text-align:center;
+  backdrop-filter:blur(12px);
+  pointer-events:none;
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ─── UTILS ─────────────────────────────────────── */
+@keyframes slideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ── HEADER ───────────────────────────────────── -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">🏠</div>
+      <div>
+        <div class="logo-name">SmartHome AI</div>
+        <div class="logo-sub">Voice-Controlled · Multilingual</div>
+      </div>
+    </div>
+    <div class="hdr-btns">
+      <button class="icon-btn" onclick="openSettings()" title="Settings">⚙️</button>
+    </div>
+  </div>
+
+  <!-- ── CONNECTION STATUS ─────────────────────────── -->
+  <div class="conn-bar" id="connBar">
+    <div class="dot busy" id="connDot"></div>
+    <span id="connTxt">Connecting to SmartHome…</span>
+  </div>
+
+  <!-- ── ERROR BANNER ──────────────────────────────── -->
+  <div class="err-banner" id="errBanner"></div>
+
+  <!-- ── LANGUAGE SELECTOR ─────────────────────────── -->
+  <div class="lang-wrap">
+    <select class="lang-select" id="langSel">
+      <option value="auto">🌐  Auto-Detect Language</option>
+      <option value="en-IN">🇮🇳  English (India)</option>
+      <option value="hi-IN">🇮🇳  हिंदी — Hindi</option>
+      <option value="kn-IN">🇮🇳  ಕನ್ನಡ — Kannada</option>
+      <option value="ta-IN">🇮🇳  தமிழ் — Tamil</option>
+      <option value="te-IN">🇮🇳  తెలుగు — Telugu</option>
+      <option value="ml-IN">🇮🇳  മലയാളം — Malayalam</option>
+      <option value="mr-IN">🇮🇳  मराठी — Marathi</option>
+      <option value="gu-IN">🇮🇳  ગુજરાતી — Gujarati</option>
+      <option value="pa-IN">🇮🇳  ਪੰਜਾਬੀ — Punjabi</option>
+      <option value="bn-IN">🇮🇳  বাংলা — Bengali</option>
+    </select>
+    <div class="lang-arrow">▾</div>
+  </div>
+
+  <!-- ── DEVICE CARDS ──────────────────────────────── -->
+  <div class="dev-grid">
+    <div class="dev-card" id="c-bulb"      onclick="tap('bulb')">
+      <span class="dev-icon" id="i-bulb">💡</span>
+      <div class="dev-name">Bulb</div>
+      <div class="dev-badge off" id="b-bulb">OFF</div>
+    </div>
+    <div class="dev-card" id="c-fan"       onclick="tap('fan')">
+      <span class="dev-icon" id="i-fan">🌀</span>
+      <div class="dev-name">Fan</div>
+      <div class="dev-badge off" id="b-fan">OFF</div>
+    </div>
+    <div class="dev-card" id="c-bed_light" onclick="tap('bed_light')">
+      <span class="dev-icon" id="i-bed_light">🛏️</span>
+      <div class="dev-name">Bed Light</div>
+      <div class="dev-badge off" id="b-bed_light">OFF</div>
+    </div>
+  </div>
+
+  <!-- ── VOICE PANEL ───────────────────────────────── -->
+  <div class="voice-panel">
+    <canvas id="wave"></canvas>
+
+    <div class="mic-wrap" id="micWrap">
+      <button class="mic-btn" id="micBtn" onclick="toggleMic()">🎙️</button>
+      <div class="mic-rings">
+        <div class="ring"></div>
+        <div class="ring"></div>
+        <div class="ring"></div>
+      </div>
+    </div>
+    <div class="mic-label" id="micLbl">Tap to speak</div>
+
+    <div class="transcript">
+      <div class="t-label">You said</div>
+      <div class="t-text" id="tText">Your voice command will appear here…</div>
+    </div>
+
+    <div class="ai-box" id="aiBox">
+      <div class="ai-label">AI</div>
+      <div class="ai-text" id="aiTxt"></div>
+    </div>
+  </div>
+
+  <!-- ── SCENE MODES ───────────────────────────────── -->
+  <div class="section-lbl">Scene Modes</div>
+  <div class="scene-grid">
+    <button class="scene-btn" data-s="sleep"   onclick="doScene('sleep')">
+      <span class="scene-icon">🌙</span>Sleep
+    </button>
+    <button class="scene-btn" data-s="movie"   onclick="doScene('movie')">
+      <span class="scene-icon">🎬</span>Movie
+    </button>
+    <button class="scene-btn" data-s="reading" onclick="doScene('reading')">
+      <span class="scene-icon">📚</span>Reading
+    </button>
+  </div>
+
+  <!-- ── ALL OFF ───────────────────────────────────── -->
+  <button class="all-off" onclick="send({device:'all',action:'off'})">
+    ⏻ &nbsp; Turn Everything Off
+  </button>
+
+  <!-- ── SUGGESTIONS ──────────────────────────────── -->
+  <div class="section-lbl">Try saying…</div>
+  <div class="chips">
+    <div class="chip" onclick="textCmd(this.textContent)">It's too hot</div>
+    <div class="chip" onclick="textCmd(this.textContent)">Make it brighter</div>
+    <div class="chip" onclick="textCmd(this.textContent)">Goodnight</div>
+    <div class="chip" onclick="textCmd(this.textContent)">I want to read</div>
+    <div class="chip" onclick="textCmd(this.textContent)">Kill all lights</div>
+    <div class="chip" onclick="textCmd(this.textContent)">ಫ್ಯಾನ್ ಆನ್ ಮಾಡು</div>
+    <div class="chip" onclick="textCmd(this.textContent)">फैन बंद करो</div>
+    <div class="chip" onclick="textCmd(this.textContent)">I feel cold</div>
+  </div>
+
+  <!-- ── HISTORY ───────────────────────────────────── -->
+  <div class="history" id="histSection">
+    <div class="section-lbl">Conversation</div>
+    <div class="h-list" id="histList"></div>
+  </div>
+
+  <!-- ── FOOTER ────────────────────────────────────── -->
+  <div class="footer">
+    Powered by <span class="hl">Google Gemini</span> &nbsp;·&nbsp;
+    Speak naturally in <span class="hl">any Indian language</span>
+  </div>
+</div>
+
+<!-- ════════ SETTINGS DRAWER ════════ -->
+<div class="overlay" id="overlay" onclick="closeSettings()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-hdr">
+    <div class="drawer-title">⚙️ Settings</div>
+    <button class="close-btn" onclick="closeSettings()">✕</button>
+  </div>
+
+  <div class="form-grp">
+    <label class="f-lbl">Gemini API Key</label>
+    <input class="f-in" type="password" id="keyIn" placeholder="AIza…" autocomplete="off">
+    <div class="f-hint">Get yours free at aistudio.google.com → Get API Key. Stored only in your browser.</div>
+  </div>
+
+  <div class="form-grp">
+    <label class="f-lbl">AI Model</label>
+    <select class="f-in" id="modelIn">
+      <option value="gemini-1.5-flash">Gemini 1.5 Flash — Fast &amp; free (recommended)</option>
+      <option value="gemini-2.0-flash">Gemini 2.0 Flash — Newer, fast</option>
+      <option value="gemini-1.5-pro">Gemini 1.5 Pro — Best quality</option>
+      <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite — Lightest</option>
+    </select>
+  </div>
+
+  <div class="form-grp">
+    <label class="f-lbl">ESP32 Address</label>
+    <input class="f-in" type="text" id="addrIn" placeholder="192.168.4.1">
+    <div class="f-hint">Default AP address is 192.168.4.1</div>
+  </div>
+
+  <div class="form-grp">
+    <label class="f-lbl">Voice Feedback (TTS)</label>
+    <select class="f-in" id="ttsIn">
+      <option value="on">Enabled</option>
+      <option value="off">Disabled</option>
+    </select>
+  </div>
+
+  <button class="save-btn" onclick="saveSettings()">Save Settings</button>
+
+  <hr class="divider">
+  <div class="section-lbl">Device Info</div>
+  <div class="dev-info" id="devInfo">Loading…</div>
+</div>
+
+<!-- ════════ TOAST ════════ -->
+<div class="toast" id="toast"></div>
+
+<!-- ════════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+// ════════════════════════════════════════════════════
+//  CONFIG  (persisted to localStorage)
+// ════════════════════════════════════════════════════
+let cfg = {
+  apiKey : '',
+  model  : 'gemini-1.5-flash',
+  esp32  : window.location.hostname || '192.168.4.1',
+  tts    : 'on'
+};
+
+function loadCfg(){
+  try{ Object.assign(cfg, JSON.parse(localStorage.getItem('sh_cfg') || '{}')); }catch(_){}
+  document.getElementById('keyIn').value   = cfg.apiKey;
+  document.getElementById('modelIn').value = cfg.model;
+  document.getElementById('addrIn').value  = cfg.esp32;
+  document.getElementById('ttsIn').value   = cfg.tts;
+}
+function saveSettings(){
+  cfg.apiKey = document.getElementById('keyIn').value.trim();
+  cfg.model  = document.getElementById('modelIn').value;
+  cfg.esp32  = document.getElementById('addrIn').value.trim() || '192.168.4.1';
+  cfg.tts    = document.getElementById('ttsIn').value;
+  localStorage.setItem('sh_cfg', JSON.stringify(cfg));
+  closeSettings();
+  toast('✅ Settings saved');
+  connect();
+}
+
+// ════════════════════════════════════════════════════
+//  DEVICE STATE
+// ════════════════════════════════════════════════════
+const state = { bulb:false, fan:false, bed_light:false };
+
+function applyState(d){
+  Object.assign(state, d);
+  ['bulb','fan','bed_light'].forEach(k=>{
+    if(d[k] === undefined) return;
+    const on = !!d[k];
+    const c  = document.getElementById('c-'+k);
+    const b  = document.getElementById('b-'+k);
+    if(!c) return;
+    c.classList.toggle('on', on);
+    b.className = 'dev-badge '+(on?'on':'off');
+    b.textContent = on ? 'ON' : 'OFF';
+  });
+}
+
+function tap(dev){
+  const on = !state[dev];
+  send({ device:dev, action: on?'on':'off' });
+}
+
+// ════════════════════════════════════════════════════
+//  ESP32 COMMUNICATION  (WebSocket + HTTP fallback)
+// ════════════════════════════════════════════════════
+let socket = null;
+let pollTimer = null;
+let reconnTimer = null;
+
+function esp32url(path){ return `http://${cfg.esp32}${path}`; }
+function wsurl(){ return `ws://${cfg.esp32}/ws`; }
+
+function connect(){
+  if(socket){ socket.onclose = null; socket.close(); }
+  clearTimeout(reconnTimer);
+  clearInterval(pollTimer);
+
+  setConn('busy','Connecting…');
+  try{
+    socket = new WebSocket(wsurl());
+    socket.onopen  = ()=>{ setConn('on', `Connected · ${cfg.esp32}`); };
+    socket.onmessage = e=>{ try{ applyState(JSON.parse(e.data)); }catch(_){} };
+    socket.onclose = ()=>{ setConn('off','Disconnected — retrying…'); reconnTimer = setTimeout(connect, 4000); };
+    socket.onerror = ()=>{ setConn('off','WS error — polling HTTP'); startPoll(); };
+  }catch(_){ startPoll(); }
+}
+
+function startPoll(){
+  clearInterval(pollTimer);
+  pollTimer = setInterval(async()=>{
+    try{
+      const r = await fetch(esp32url('/api/status'), {signal:AbortSignal.timeout(3000)});
+      if(r.ok){ applyState(await r.json()); setConn('on',`Connected · ${cfg.esp32}`); }
+    }catch(_){ setConn('off','Cannot reach ESP32'); }
+  }, 4000);
+}
+
+// Send a command JSON to ESP32
+async function send(cmd){
+  // Optimistic UI
+  if(cmd.scene){
+    const map = {sleep:{bulb:0,fan:0,bed_light:0},movie:{bulb:0,fan:1,bed_light:0},reading:{bulb:0,fan:1,bed_light:1}};
+    if(map[cmd.scene]) applyState(Object.fromEntries(Object.entries(map[cmd.scene]).map(([k,v])=>[k,!!v])));
+  } else if(cmd.commands){
+    cmd.commands.forEach(c=>{ if(c.device!=='all') applyState({[c.device]:c.action==='on'}); else applyState({bulb:c.action==='on',fan:c.action==='on',bed_light:c.action==='on'}); });
+  } else if(cmd.device){
+    const on = cmd.action === 'on';
+    if(cmd.device === 'all') applyState({bulb:on,fan:on,bed_light:on});
+    else applyState({[cmd.device]:on});
+  }
+
+  if(socket && socket.readyState === 1){
+    socket.send(JSON.stringify(cmd));
+  } else {
+    try{
+      await fetch(esp32url('/api/control'),{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(cmd),
+        signal:AbortSignal.timeout(5000)
+      });
+    }catch(_){ showErr('Could not reach ESP32. Check WiFi connection.'); }
+  }
+}
+
+function setConn(status, txt){
+  const dot = document.getElementById('connDot');
+  dot.className = 'dot '+(status==='on'?'':status==='off'?'off':'busy');
+  document.getElementById('connTxt').textContent = txt;
+}
+
+// ════════════════════════════════════════════════════
+//  GEMINI PROMPT ENGINEERING
+// ════════════════════════════════════════════════════
+const SYS_PROMPT = `You are an AI smart home controller. Analyse the user's voice command and return ONLY valid JSON — no markdown, no explanation, nothing else.
+
+DEVICES:
+  "bulb"      — ceiling light / room light / main lamp
+  "fan"       — ceiling fan / room fan / air cooler
+  "bed_light" — bed lamp / reading light / night light / bedside lamp
+  "all"       — every device simultaneously
+
+ACTIONS: "on" | "off"
+
+RESPONSE FORMATS — pick ONE that fits:
+  Single device  : {"device":"bulb","action":"on"}
+  Multiple       : {"commands":[{"device":"fan","action":"on"},{"device":"bulb","action":"off"}]}
+  Scene mode     : {"scene":"sleep"} | {"scene":"movie"} | {"scene":"reading"}
+  Not understood : {"error":"unclear","msg":"one short sentence"}
+
+SCENE DEFINITIONS (apply automatically when intent matches):
+  sleep   → all off
+  movie   → bulb off, fan on, bed_light off
+  reading → bulb off, fan on, bed_light on
+
+INTENT MAPPING (infer freely — do not require exact keywords):
+  dark / can't see / too dim / need light → bulb on
+  too bright / glare / hurts eyes         → bulb off
+  hot / stuffy / sweating / need breeze   → fan on
+  cold / chilly / freezing               → fan off
+  going to sleep / goodnight / tired / bedtime → scene: sleep
+  watching film / movie night            → scene: movie
+  reading / studying / working           → scene: reading
+  "switch everything" / "all lights"     → device: all
+
+LANGUAGE: Support all Indian languages — Hindi, Kannada, Tamil, Telugu,
+Malayalam, Marathi, Gujarati, Punjabi, Bengali, English, and mixed code-switching.
+Understand transliterated text (e.g. "fan band karo", "bulb on maadu").
+
+STRICT RULES:
+  1. Output ONLY a single JSON object. Nothing before or after it.
+  2. Never add comments or explanations inside the JSON.
+  3. Use exactly the device keys above — no synonyms in the output.`;
+
+// Gemini uses {role:'user'|'model', parts:[{text}]} format
+let history = [];   // conversation memory for context
+
+async function callAI(userText){
+  if(!cfg.apiKey){ showErr('⚙️ Add your Gemini API key in Settings first!'); return null; }
+
+  micState('proc');
+  showAI('<div class="dots"><span></span><span></span><span></span></div>');
+
+  history.push({ role:'user', parts:[{ text: userText }] });
+
+  // Gemini API endpoint — key goes in the URL query string
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${cfg.model}:generateContent?key=${cfg.apiKey}`;
+
+  let retries = 0;
+  while(retries < 3){
+    try{
+      const res = await fetch(url, {
+        method : 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body   : JSON.stringify({
+          systemInstruction: { parts:[{ text: SYS_PROMPT }] },
+          contents         : history.slice(-14),   // last 7 exchanges
+          generationConfig : {
+            responseMimeType : 'application/json',  // forces valid JSON output
+            temperature      : 0.1,
+            maxOutputTokens  : 150
+          }
+        }),
+        signal: AbortSignal.timeout(12000)
+      });
+
+      if(!res.ok){
+        const e = await res.json().catch(()=>({}));
+        const msg = e?.error?.message || `HTTP ${res.status}`;
+        if(res.status === 400 || res.status === 403){
+          showErr('Invalid Gemini API key. Get one free at aistudio.google.com');
+          return null;
+        }
+        if(res.status === 429){ retries++; await sleep(1500*retries); continue; }
+        throw new Error(msg);
+      }
+
+      const data = await res.json();
+      const raw  = data.candidates[0].content.parts[0].text;
+      history.push({ role:'model', parts:[{ text: raw }] });
+      return JSON.parse(raw);
+
+    } catch(e){
+      if(e.name === 'TimeoutError'){ showErr('AI timed out. Check internet connection.'); }
+      else if(retries >= 2){ showErr(`AI error: ${e.message}`); }
+      else{ retries++; await sleep(1000*retries); continue; }
+      return null;
+    }
+  }
+  return null;
+}
+
+async function processAI(result, original){
+  if(!result) return;
+
+  if(result.error){
+    const msg = result.msg || 'Command not understood. Try rephrasing.';
+    showAI('❓ ' + msg);
+    speak(msg);
+    return;
+  }
+
+  let desc = '';
+  if(result.scene){
+    desc = `${cap(result.scene)} mode activated`;
+    await doScene(result.scene, false);   // false = skip redundant UI toast from here
+  } else if(result.commands){
+    const names = {bulb:'Bulb',fan:'Fan',bed_light:'Bed Light',all:'All devices'};
+    desc = result.commands.map(c=>`${names[c.device]||c.device} ${c.action.toUpperCase()}`).join(', ');
+    await send(result);
+  } else if(result.device){
+    const names = {bulb:'Bulb',fan:'Fan',bed_light:'Bed Light',all:'All devices'};
+    desc = `${names[result.device]||result.device} turned ${result.action.toUpperCase()}`;
+    await send(result);
+  }
+
+  if(desc){
+    showAI('✅ ' + desc);
+    speak(desc);
+    addHistory(original, desc);
+    toast('✅ ' + desc);
+  }
+  micState('idle');
+}
+
+async function textCmd(text){
+  document.getElementById('tText').textContent = text;
+  document.getElementById('tText').className   = 't-text';
+  const result = await callAI(text);
+  await processAI(result, text);
+}
+
+// ════════════════════════════════════════════════════
+//  SPEECH RECOGNITION
+// ════════════════════════════════════════════════════
+let recog = null;
+let isRec = false;
+
+function initRecog(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ showErr('Speech recognition not supported. Use Chrome or Edge.'); return false; }
+
+  recog = new SR();
+  recog.continuous = false;
+  recog.interimResults = true;
+  recog.maxAlternatives = 1;
+
+  recog.onstart = ()=>{
+    isRec = true;
+    micState('rec');
+    document.getElementById('tText').textContent = 'Listening…';
+    document.getElementById('tText').className = 't-text interim';
+    document.getElementById('aiBox').classList.remove('show');
+  };
+
+  recog.onresult = e=>{
+    let interim = '', final = '';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    if(final){
+      document.getElementById('tText').textContent = final;
+      document.getElementById('tText').className = 't-text';
+      stopWave();
+      callAI(final).then(r=>processAI(r,final));
+    } else if(interim){
+      document.getElementById('tText').textContent = interim;
+    }
+  };
+
+  recog.onerror = ev=>{
+    isRec = false; micState('idle'); stopWave();
+    if(ev.error==='not-allowed') showErr('Microphone access denied. Allow mic in browser settings.');
+    else if(ev.error==='no-speech') document.getElementById('tText').textContent = 'No speech detected. Try again.';
+    else showErr('Speech error: '+ev.error);
+  };
+
+  recog.onend = ()=>{ isRec=false; stopWave(); if(micBtn.className.includes('rec')) micState('idle'); };
+  return true;
+}
+
+const micBtn = document.getElementById('micBtn');
+
+async function toggleMic(){
+  if(isRec){ recog && recog.stop(); return; }
+
+  if(!cfg.apiKey){ showErr('⚙️ Add your Gemini API key in Settings first!'); openSettings(); return; }
+
+  if(!recog && !initRecog()) return;
+
+  const lang = document.getElementById('langSel').value;
+  recog.lang = lang === 'auto' ? 'en-IN' : lang;
+
+  await startWave();
+  try{ recog.start(); }catch(_){ stopWave(); }
+}
+
+// ════════════════════════════════════════════════════
+//  WAVEFORM VISUALISER
+// ════════════════════════════════════════════════════
+let actx=null, analyser=null, stream=null, raf=null;
+
+async function startWave(){
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+    actx   = new (window.AudioContext||window.webkitAudioContext)();
+    analyser = actx.createAnalyser();
+    analyser.fftSize = 256;
+    actx.createMediaStreamSource(stream).connect(analyser);
+
+    const canvas = document.getElementById('wave');
+    canvas.classList.add('show');
+    drawWave(canvas);
+  }catch(_){}
+}
+
+function drawWave(canvas){
+  const ctx = canvas.getContext('2d');
+  const buf = new Uint8Array(analyser.frequencyBinCount);
+  (function frame(){
+    raf = requestAnimationFrame(frame);
+    analyser.getByteFrequencyData(buf);
+    canvas.width  = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const bw = (canvas.width/buf.length)*2.6;
+    let x=0;
+    for(let i=0;i<buf.length;i++){
+      const h = (buf[i]/255)*canvas.height;
+      const g = ctx.createLinearGradient(0,canvas.height,0,0);
+      g.addColorStop(0,'rgba(0,245,255,.3)');
+      g.addColorStop(1,'#00f5ff');
+      ctx.fillStyle = g;
+      ctx.fillRect(x, canvas.height-h, bw-1, h);
+      x += bw;
+    }
+  })();
+}
+
+function stopWave(){
+  if(raf){ cancelAnimationFrame(raf); raf=null; }
+  const canvas = document.getElementById('wave');
+  canvas.classList.remove('show');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  stream && stream.getTracks().forEach(t=>t.stop()); stream=null;
+  actx && actx.close(); actx=null; analyser=null;
+}
+
+// ════════════════════════════════════════════════════
+//  SCENES
+// ════════════════════════════════════════════════════
+async function doScene(name, notify=true){
+  await send({ scene:name });
+  if(notify){ toast(`🎭 ${cap(name)} mode activated`); speak(`${name} mode activated`); addHistory(`${cap(name)} mode`, `All lights set for ${name}`); }
+}
+
+// ════════════════════════════════════════════════════
+//  TTS
+// ════════════════════════════════════════════════════
+function speak(text){
+  if(cfg.tts !== 'on' || !window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate=1; u.pitch=1; u.volume=.85;
+  speechSynthesis.speak(u);
+}
+
+// ════════════════════════════════════════════════════
+//  UI HELPERS
+// ════════════════════════════════════════════════════
+function micState(s){
+  micBtn.className = 'mic-btn';
+  const lbl = document.getElementById('micLbl');
+  const wrap = document.getElementById('micWrap');
+
+  if(s==='rec'){
+    micBtn.classList.add('rec'); wrap.classList.add('recording');
+    micBtn.innerHTML='⏹️'; lbl.textContent='Tap to stop';
+  } else if(s==='proc'){
+    micBtn.classList.add('proc'); wrap.classList.remove('recording');
+    micBtn.innerHTML='<span class="proc-spin">⌛</span>'; lbl.textContent='Thinking…';
+  } else {
+    wrap.classList.remove('recording');
+    micBtn.innerHTML='🎙️'; lbl.textContent='Tap to speak';
+  }
+}
+
+function showAI(html){
+  const box = document.getElementById('aiBox');
+  box.classList.add('show');
+  document.getElementById('aiTxt').innerHTML = html;
+}
+
+function showErr(msg){
+  const el = document.getElementById('errBanner');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(()=>el.classList.remove('show'), 6000);
+}
+
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(()=>el.classList.remove('show'), 3000);
+}
+
+function addHistory(user, ai){
+  const sec  = document.getElementById('histSection');
+  const list = document.getElementById('histList');
+  sec.style.display = 'block';
+  const el = document.createElement('div');
+  el.innerHTML = `
+    <div class="h-item u"><div class="h-sender">You</div>${escHtml(user)}</div>
+    <div class="h-item a"><div class="h-sender">AI</div>${escHtml(ai)}</div>`;
+  list.insertBefore(el, list.firstChild);
+  while(list.children.length > 12) list.removeChild(list.lastChild);
+}
+
+function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+// ════════════════════════════════════════════════════
+//  SETTINGS DRAWER
+// ════════════════════════════════════════════════════
+function openSettings(){
+  document.getElementById('drawer').classList.add('show');
+  document.getElementById('overlay').classList.add('show');
+  loadDevInfo();
+}
+function closeSettings(){
+  document.getElementById('drawer').classList.remove('show');
+  document.getElementById('overlay').classList.remove('show');
+}
+async function loadDevInfo(){
+  const el = document.getElementById('devInfo');
+  try{
+    const r = await fetch(esp32url('/api/info'),{signal:AbortSignal.timeout(3000)});
+    if(r.ok){
+      const d = await r.json();
+      el.innerHTML = `
+        AP SSID: <span>${d.ap_ssid}</span><br>
+        AP IP: <span>${d.ap_ip}</span><br>
+        ${d.connected ? `WiFi IP: <span>${d.sta_ip}</span><br>Connected to: <span>${d.sta_ssid}</span><br>` : ''}
+        Uptime: <span>${d.uptime}s</span>`;
+    }
+  }catch(_){ el.textContent = 'Could not reach ESP32'; }
+}
+
+// ════════════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  loadCfg();
+  connect();
+  initRecog();
+
+  if(!cfg.apiKey){
+    setTimeout(()=>toast('⚙️ Tap the gear icon to add your Gemini API key'), 1500);
+  }
+});
+</script>
+</body>
+</html>

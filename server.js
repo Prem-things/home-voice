@@ -46,7 +46,7 @@ function getRoom(roomId) {
         rooms.set(roomId, {
             esp32  : null,
             phones : new Set(),
-            state  : { bulb: false, fan: false, bed_light: false }
+            state  : { bulb: false, fan: false, bed_light: false, charging: false }
         });
     }
     return rooms.get(roomId);
@@ -64,6 +64,7 @@ DEVICES:
   "bulb"      — ceiling light / room light / main lamp
   "fan"       — ceiling fan / room fan / air cooler
   "bed_light" — bed lamp / reading light / night light / bedside lamp
+  "charging"  — phone charger / charging socket / USB socket / power socket
   "all"       — every device simultaneously
 
 ACTIONS: "on" | "off"
@@ -88,6 +89,8 @@ INTENT MAPPING (infer freely):
   movie / film night                    → scene: movie
   reading / studying / working          → scene: reading
   everything / all lights               → device: all
+  charge / charging / plug in / socket  → charging on
+  stop charging / unplug                → charging off
 
 LANGUAGES: Support all Indian languages — Hindi, Kannada, Tamil, Telugu,
 Malayalam, Marathi, Gujarati, Punjabi, Bengali, English, and mixed code-switching.
@@ -170,7 +173,7 @@ app.get('/api/status/:roomId', (req, res) => {
     const room = rooms.get(req.params.roomId);
     res.json(room
         ? { ...room.state, esp32Connected: !!room.esp32 }
-        : { bulb: false, fan: false, bed_light: false, esp32Connected: false }
+        : { bulb: false, fan: false, bed_light: false, charging: false, esp32Connected: false }
     );
 });
 
@@ -208,7 +211,12 @@ wss.on('connection', (ws, req) => {
             try {
                 const data = JSON.parse(raw);
                 if ('bulb' in data) {
-                    room.state = { bulb: !!data.bulb, fan: !!data.fan, bed_light: !!data.bed_light };
+                    room.state = {
+                        bulb      : !!data.bulb,
+                        fan       : !!data.fan,
+                        bed_light : !!data.bed_light,
+                        charging  : !!data.charging
+                    };
                     broadcastToPhones(room, { ...room.state, esp32Connected: true });
                 }
             } catch (_) {}
