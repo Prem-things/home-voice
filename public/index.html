@@ -48,7 +48,7 @@ body::after{width:60vw;height:60vw;bottom:-20vw;right:-15vw;background:radial-gr
 .lang-arr{position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--cyan);font-size:12px}
 
 /* ── DEVICE CARDS ── */
-.dev-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.dev-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
 .dev-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px 10px 14px;text-align:center;cursor:pointer;transition:all .28s;user-select:none}
 .dev-card:active{transform:scale(.95)}
 .dev-card.on{border-color:var(--cyan);background:rgba(0,245,255,.05);box-shadow:0 0 28px rgba(0,245,255,.15)}
@@ -208,6 +208,11 @@ body::after{width:60vw;height:60vw;bottom:-20vw;right:-15vw;background:radial-gr
       <div class="dev-nm">Bed Light</div>
       <div class="dev-badge off" id="b-bed_light">OFF</div>
     </div>
+    <div class="dev-card" id="c-charging"  onclick="tap('charging')">
+      <span class="dev-icon">🔌</span>
+      <div class="dev-nm">Charging</div>
+      <div class="dev-badge off" id="b-charging">OFF</div>
+    </div>
   </div>
 
   <!-- VOICE PANEL -->
@@ -284,11 +289,11 @@ document.getElementById('roomBadge').textContent = 'ROOM ' + roomId;
 document.title = `SmartHome · ${roomId}`;
 
 // ── Device state ────────────────────────────────────────────────
-const state = { bulb:false, fan:false, bed_light:false };
+const state = { bulb:false, fan:false, bed_light:false, charging:false };
 
 function applyState(d){
   Object.assign(state, d);
-  ['bulb','fan','bed_light'].forEach(k=>{
+  ['bulb','fan','bed_light','charging'].forEach(k=>{
     if(d[k] === undefined) return;
     const on = !!d[k];
     const card  = document.getElementById('c-'+k);
@@ -331,8 +336,8 @@ async function sendCmd(cmd){
   // Optimistic UI update
   const on = cmd.action === 'on';
   if(cmd.scene){ const m={sleep:{bulb:0,fan:0,bed_light:0},movie:{bulb:0,fan:1,bed_light:0},reading:{bulb:0,fan:1,bed_light:1}}; if(m[cmd.scene]) applyState(Object.fromEntries(Object.entries(m[cmd.scene]).map(([k,v])=>[k,!!v]))); }
-  else if(cmd.commands){ cmd.commands.forEach(c=>{ if(c.device==='all') applyState({bulb:c.action==='on',fan:c.action==='on',bed_light:c.action==='on'}); else applyState({[c.device]:c.action==='on'}); }); }
-  else if(cmd.device){ if(cmd.device==='all') applyState({bulb:on,fan:on,bed_light:on}); else applyState({[cmd.device]:on}); }
+  else if(cmd.commands){ cmd.commands.forEach(c=>{ if(c.device==='all') applyState({bulb:c.action==='on',fan:c.action==='on',bed_light:c.action==='on',charging:c.action==='on'}); else applyState({[c.device]:c.action==='on'}); }); }
+  else if(cmd.device){ if(cmd.device==='all') applyState({bulb:on,fan:on,bed_light:on,charging:on}); else applyState({[cmd.device]:on}); }
 
   try{
     await fetch(`/api/command/${roomId}`,{
@@ -396,11 +401,11 @@ async function processResult(cmd, original){
     desc = cap(cmd.scene)+' mode activated';
     await doScene(cmd.scene, false);
   } else if(cmd.commands){
-    const nm={bulb:'Bulb',fan:'Fan',bed_light:'Bed Light',all:'All'};
+    const nm={bulb:'Bulb',fan:'Fan',bed_light:'Bed Light',charging:'Charging',all:'All'};
     desc = cmd.commands.map(c=>`${nm[c.device]||c.device} ${c.action.toUpperCase()}`).join(', ');
     await sendCmd(cmd);
   } else if(cmd.device){
-    const nm={bulb:'Bulb',fan:'Fan',bed_light:'Bed Light',all:'All devices'};
+    const nm={bulb:'Bulb',fan:'Fan',bed_light:'Bed Light',charging:'Charging',all:'All devices'};
     desc = `${nm[cmd.device]||cmd.device} turned ${cmd.action.toUpperCase()}`;
     await sendCmd(cmd);
   }
